@@ -1,0 +1,197 @@
+<html><head></head><body><div class="apidocDiv">
+<style>
+/*csslint
+*/
+.apidocDiv {
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.apidocDiv a[href] {
+    color: #33f;
+    font-weight: bold;
+    text-decoration: none;
+}
+.apidocDiv a[href]:hover {
+    text-decoration: underline;
+}
+.apidocCodeCommentSpan {
+    background: #bbf;
+    color: #000;
+    display: block;
+}
+.apidocCodeKeywordSpan {
+    color: #d00;
+    font-weight: bold;
+}
+.apidocCodePre {
+    background: #eef;
+    border: 1px solid;
+    color: #777;
+    padding: 5px;
+    white-space: pre-wrap;
+}
+.apidocFooterDiv {
+    margin-top: 20px;
+    text-align: center;
+}
+.apidocModuleLi {
+    margin-top: 10px;
+}
+.apidocSectionDiv {
+    border-top: 1px solid;
+    margin-top: 20px;
+}
+.apidocSignatureSpan {
+    color: #777;
+    font-weight: bold;
+}
+</style>
+<h1>api documentation for
+    <a href="https://github.com/mahnunchik/gulp-responsive#readme">gulp-responsive (v2.7.0)</a>
+</h1>
+<h4>gulp responsive images</h4>
+<div class="apidocSectionDiv"><a href="#apidoc.tableOfContents" id="apidoc.tableOfContents"><h1>table of contents</h1></a><ol>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.gulp-responsive">module gulp-responsive</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.gulp-responsive.gulp-responsive">
+            function <span class="apidocSignatureSpan"></span>gulp-responsive
+            <span class="apidocSignatureSpan">(config, options)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+</ol></div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.gulp-responsive" id="apidoc.module.gulp-responsive">module gulp-responsive</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.gulp-responsive.gulp-responsive" id="apidoc.element.gulp-responsive.gulp-responsive">
+        function <span class="apidocSignatureSpan"></span>gulp-responsive
+        <span class="apidocSignatureSpan">(config, options)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function gulpResponsive(config, options) {
+
+  var statistics = {
+    total: 0,
+    matched: 0,
+    created: 0,
+    unmatched: 0,
+    unmatchedBlocked: 0,
+    unmatchedPassed: 0
+  };
+
+  options = _.defaults({}, options, {
+    errorOnUnusedConfig: true,
+    errorOnUnusedImage: true,
+    errorOnEnlargement: true,
+    passThroughUnused: false,
+    silent: false,
+    stats: true
+  });
+
+  config = prepareConfig(config || [], options);
+
+  return through2.obj(function (file, enc, done) {
+      var that = this;
+
+      if (file.isNull()) {
+        this.push(file);
+        return done();
+      }
+
+      if (file.isStream()) {
+        return done(new gutil.PluginError(PLUGIN_NAME, 'Streaming not supported'));
+      }
+
+      statistics.total++;
+      var matched = config.filter(function(conf) {
+        return minimatch(file.relative, conf.name);
+      });
+
+      if (matched.length === 0) {
+        statistics.unmatched++;
+        var message = 'File `' + file.relative + '`: Image does not match any config';
+        if (options.errorOnUnusedImage) {
+          return done(new gutil.PluginError(PLUGIN_NAME, message));
+        } else if (options.passThroughUnused) {
+          this.push(file);
+          statistics.unmatchedPassed++;
+          if (!options.silent){
+            gutil.log(PLUGIN_NAME + ': (pass through without changes)', gutil.colors.magenta(message));
+          }
+          return done();
+        }
+        statistics.unmatchedBlocked++;
+        if (!options.silent){
+          gutil.log(PLUGIN_NAME + ': (skip for processing)', gutil.colors.magenta(message));
+        }
+        return done();
+      }
+
+      statistics.matched++;
+      async.each(matched, function(conf, cb) {
+        // config item matched (can be matched multiple times)
+        conf.matched = true;
+
+        sharpVinyl(file, conf, options, function(err, newFile) {
+          if (err) {
+            return cb(err);
+          }
+          if (newFile) {
+            that.push(newFile);
+            statistics.created++;
+          }
+          cb();
+        });
+      }, done);
+    }, function(cb) {
+      var notMatched = config.filter(function(conf) {
+        return !conf.matched;
+      });
+
+      if (options.stats &amp;&amp; !(options.silent &amp;&amp; statistics.created === 0)){
+        var msg =
+          'Created ' + statistics.created + ' ' + plur('image', statistics.created) +
+          gutil.colors.dim.white(' (matched ' + statistics.matched + ' of ' +
+          statistics.total + ' ' + plur('image', statistics.total) + ')');
+
+        gutil.log(PLUGIN_NAME + ':', gutil.colors.green(msg));
+      }
+
+      if (notMatched.length &gt; 0 &amp;&amp; (!options.silent || options.errorOnUnusedConfig)) {
+        var message = 'Available images do not match the following config:';
+        notMatched.forEach(function(conf) {
+          message += '\n  - `' + conf.name + '`';
+        });
+        if (options.errorOnUnusedConfig) {
+          return cb(new gutil.PluginError(PLUGIN_NAME, message));
+        } else {
+          gutil.log(PLUGIN_NAME + ':', gutil.colors.magenta(message));
+        }
+      }
+      cb();
+    }
+  );
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocFooterDiv">
+    [ this document was created with
+    <a href="https://github.com/kaizhu256/node-utility2" target="_blank">utility2</a>
+    ]
+</div>
+</div>
+</body></html>
